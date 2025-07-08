@@ -1,0 +1,13 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.toolbar {
+  padding: 10px;
+  background: #f0f0f0;
+}
+.canvas-3d {
+  flex: 1;
+  height: 100%;
+}
