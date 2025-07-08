@@ -1,39 +1,148 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 
 const COMPONENTS = ["Toilet", "Sink", "Bath", "Shower", "Radiator", "Mirror"];
 
+// Custom texture definitions - supports both files and colors
 const FLOOR_TEXTURES = [
-  { name: "White Tile", color: 0xf8f8f8, pattern: "tile" },
-  { name: "Gray Tile", color: 0xd0d0d0, pattern: "tile" },
-  { name: "Marble", color: 0xf5f5dc, pattern: "marble" },
-  { name: "Dark Tile", color: 0x606060, pattern: "tile" },
-  { name: "Wood", color: 0xd2b48c, pattern: "wood" }
+  { name: "White Tile", file: "", color: 0xf8f8f8, scale: [4, 4] },
+  { name: "Gray Tile", file: "/textures/floor_grey_tile.avif", color: 0xd0d0d0, scale: [4, 4] },
+  { name: "Marble", file: "", color: 0xf5f5dc, scale: [2, 2] },
+  { name: "Dark Tile", file: "", color: 0x606060, scale: [4, 4] },
+  { name: "Wood", file: "", color: 0xd2b48c, scale: [3, 3] },
+  { name: "Red Terracotta", file: "/textures/floor_red_terracotta.jpg", color: 0xffffff, scale: [4, 4] },
+  { name: "Stone", file: "", color: 0x888888, scale: [2, 2] }
 ];
 
 const WALL_TEXTURES = [
-  { name: "White Paint", color: 0xffffff, pattern: "paint" },
-  { name: "Light Blue", color: 0xe6f3ff, pattern: "paint" },
-  { name: "Beige", color: 0xf5f5dc, pattern: "paint" },
-  { name: "White Tile", color: 0xf8f8f8, pattern: "tile" },
-  { name: "Blue Tile", color: 0xb0d4f1, pattern: "tile" },
-  { name: "Green Tile", color: 0xc8e6c9, pattern: "tile" }
+  { name: "Metro White Tile", file: "/textures/wall_metro_white_tile.png", color: 0xffffff, scale: [20, 12] },
+  { name: "White Paint", file: "", color: 0xffffff, scale: [1, 1] },
+  { name: "Light Blue", file: "", color: 0xe6f3ff, scale: [1, 1] },
+  { name: "Beige", file: "", color: 0xf5f5dc, scale: [1, 1] },
+  { name: "White Tile", file: "", color: 0xf8f8f8, scale: [4, 4] },
+  { name: "Blue Tile", file: "", color: 0xb0d4f1, scale: [4, 4] },
+  { name: "Green Tile", file: "", color: 0xc8e6c9, scale: [4, 4] },
+  { name: "Brick", file: "/textures/wall_brick.jpg", color: 0xcc6666, scale: [6, 4] },
+  { name: "Subway Tile", file: "", color: 0xf0f0f0, scale: [8, 6] }
 ];
+
+function Toolbar({ onAdd }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          padding: '10px',
+          background: '#4CAF50',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          zIndex: 1001,
+          display: window.innerWidth <= 768 ? 'block' : 'none'
+        }}
+      >
+        ☰
+      </button>
+
+      {/* Desktop toolbar */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        padding: '10px',
+        background: 'rgba(0,0,0,0.8)',
+        zIndex: 1000,
+        display: window.innerWidth > 768 ? 'flex' : 'none',
+        gap: '10px',
+        justifyContent: 'center',
+        flexWrap: 'wrap'
+      }}>
+        {COMPONENTS.map((type) => (
+          <button
+            key={type}
+            onClick={() => onAdd(type)}
+            style={{
+              padding: '8px 16px',
+              background: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              minWidth: '80px'
+            }}
+          >
+            Add {type}
+          </button>
+        ))}
+      </div>
+
+      {/* Mobile dropdown menu */}
+      {isExpanded && (
+        <div style={{
+          position: 'absolute',
+          top: '50px',
+          right: '10px',
+          background: 'rgba(0,0,0,0.9)',
+          padding: '10px',
+          borderRadius: '4px',
+          zIndex: 1001,
+          display: window.innerWidth <= 768 ? 'block' : 'none',
+          minWidth: '150px'
+        }}>
+          {COMPONENTS.map((type) => (
+            <button
+              key={type}
+              onClick={() => {
+                onAdd(type);
+                setIsExpanded(false);
+              }}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '10px',
+                margin: '2px 0',
+                background: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Add {type}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
 function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }) {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = window.innerWidth <= 768;
 
   return (
     <div style={{
       position: 'absolute',
-      top: '60px',
+      top: isMobile ? '10px' : '60px',
       left: '10px',
       background: 'rgba(0,0,0,0.8)',
       padding: '10px',
       borderRadius: '4px',
       zIndex: 1000,
       color: 'white',
-      minWidth: '200px'
+      minWidth: isMobile ? '280px' : '200px',
+      maxWidth: isMobile ? '90vw' : '300px'
     }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -41,10 +150,12 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
           background: '#666',
           color: 'white',
           border: 'none',
-          padding: '5px 10px',
+          padding: '8px 12px',
           borderRadius: '4px',
           cursor: 'pointer',
-          marginBottom: '10px'
+          marginBottom: '10px',
+          fontSize: isMobile ? '16px' : '14px',
+          width: '100%'
         }}
       >
         {isOpen ? 'Hide' : 'Show'} Textures
@@ -53,8 +164,8 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
       {isOpen && (
         <div>
           <div style={{ marginBottom: '15px' }}>
-            <h4 style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Floor Texture:</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: isMobile ? '16px' : '14px' }}>Floor Texture:</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {FLOOR_TEXTURES.map((texture, index) => (
                 <button
                   key={index}
@@ -62,12 +173,16 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
                   style={{
                     background: `#${texture.color.toString(16).padStart(6, '0')}`,
                     border: currentFloor === index ? '2px solid #4CAF50' : '1px solid #ccc',
-                    width: '30px',
-                    height: '30px',
+                    width: isMobile ? '40px' : '30px',
+                    height: isMobile ? '40px' : '30px',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '8px',
-                    padding: '2px'
+                    padding: '2px',
+                    minWidth: isMobile ? '40px' : '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   title={texture.name}
                 />
@@ -76,8 +191,8 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
           </div>
 
           <div>
-            <h4 style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Wall Texture:</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: isMobile ? '16px' : '14px' }}>Wall Texture:</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {WALL_TEXTURES.map((texture, index) => (
                 <button
                   key={index}
@@ -85,12 +200,16 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
                   style={{
                     background: `#${texture.color.toString(16).padStart(6, '0')}`,
                     border: currentWall === index ? '2px solid #4CAF50' : '1px solid #ccc',
-                    width: '30px',
-                    height: '30px',
+                    width: isMobile ? '40px' : '30px',
+                    height: isMobile ? '40px' : '30px',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '8px',
-                    padding: '2px'
+                    padding: '2px',
+                    minWidth: isMobile ? '40px' : '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   title={texture.name}
                 />
@@ -103,37 +222,165 @@ function TexturePanel({ onFloorChange, onWallChange, currentFloor, currentWall }
   );
 }
 
-function Toolbar({ onAdd }) {
+function RoomSizePanel({ onRoomSizeChange, roomWidth, roomHeight }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempWidth, setTempWidth] = useState(roomWidth);
+  const [tempHeight, setTempHeight] = useState(roomHeight);
+  const isMobile = window.innerWidth <= 768;
+
+  const handleApply = () => {
+    onRoomSizeChange(tempWidth, tempHeight);
+  };
+
+  const handleReset = () => {
+    setTempWidth(10);
+    setTempHeight(10);
+    onRoomSizeChange(10, 10);
+  };
+
   return (
     <div style={{
       position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      padding: '10px',
+      top: isMobile ? '10px' : '60px',
+      right: '10px',
       background: 'rgba(0,0,0,0.8)',
+      padding: '10px',
+      borderRadius: '4px',
       zIndex: 1000,
-      display: 'flex',
-      gap: '10px',
-      justifyContent: 'center'
+      color: 'white',
+      minWidth: isMobile ? '200px' : '180px'
     }}>
-      {COMPONENTS.map((type) => (
-        <button
-          key={type}
-          onClick={() => onAdd(type)}
-          style={{
-            padding: '8px 16px',
-            background: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          Add {type}
-        </button>
-      ))}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: '#666',
+          color: 'white',
+          border: 'none',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginBottom: '10px',
+          fontSize: isMobile ? '16px' : '14px',
+          width: '100%'
+        }}
+      >
+        {isOpen ? 'Hide' : 'Show'} Room Size
+      </button>
+
+      {isOpen && (
+        <div>
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>
+              Width: {tempWidth}m
+            </label>
+            <input
+              type="range"
+              min="6"
+              max="20"
+              step="0.5"
+              value={tempWidth}
+              onChange={(e) => setTempWidth(parseFloat(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>
+              Height: {tempHeight}m
+            </label>
+            <input
+              type="range"
+              min="6"
+              max="20"
+              step="0.5"
+              value={tempHeight}
+              onChange={(e) => setTempHeight(parseFloat(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <button
+              onClick={handleApply}
+              style={{
+                flex: 1,
+                background: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                padding: '6px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Apply
+            </button>
+            <button
+              onClick={handleReset}
+              style={{
+                flex: 1,
+                background: '#f44336',
+                color: 'white',
+                border: 'none',
+                padding: '6px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UndoRedoPanel({ onUndo, onRedo, canUndo, canRedo }) {
+  const isMobile = window.innerWidth <= 768;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: isMobile ? '80px' : '60px',
+      right: '10px',
+      display: 'flex',
+      gap: '5px',
+      zIndex: 1000
+    }}>
+      <button
+        onClick={onUndo}
+        disabled={!canUndo}
+        style={{
+          background: canUndo ? '#2196F3' : '#666',
+          color: 'white',
+          border: 'none',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          cursor: canUndo ? 'pointer' : 'not-allowed',
+          fontSize: '12px',
+          opacity: canUndo ? 1 : 0.5
+        }}
+      >
+        ↶ Undo
+      </button>
+      <button
+        onClick={onRedo}
+        disabled={!canRedo}
+        style={{
+          background: canRedo ? '#2196F3' : '#666',
+          color: 'white',
+          border: 'none',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          cursor: canRedo ? 'pointer' : 'not-allowed',
+          fontSize: '12px',
+          opacity: canRedo ? 1 : 0.5
+        }}
+      >
+        ↷ Redo
+      </button>
     </div>
   );
 }
@@ -146,44 +393,124 @@ export default function App() {
   const [items, setItems] = useState([]);
   const [currentFloorTexture, setCurrentFloorTexture] = useState(0);
   const [currentWallTexture, setCurrentWallTexture] = useState(0);
+  const [roomWidth, setRoomWidth] = useState(10);
+  const [roomHeight, setRoomHeight] = useState(10);
   const floorRef = useRef(null);
   const wallRefs = useRef([]);
 
-  const createTexturedMaterial = (texture) => {
-    const material = new THREE.MeshStandardMaterial({ color: texture.color });
+  // Undo/Redo state management
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
-    // Add simple procedural texture patterns
-    if (texture.pattern === "tile") {
-      // Create a simple tile pattern using a canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
+  const textureLoader = useRef(new THREE.TextureLoader());
+  const loadedTexturesRef = useRef(new Map());
 
-      // Fill with base color
-      ctx.fillStyle = `#${texture.color.toString(16).padStart(6, '0')}`;
-      ctx.fillRect(0, 0, 256, 256);
+  // Save state to history
+  const saveToHistory = (newItems) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push({
+      items: JSON.parse(JSON.stringify(newItems)),
+      roomWidth,
+      roomHeight,
+      currentFloorTexture,
+      currentWallTexture
+    });
 
-      // Add grid lines for tiles
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.lineWidth = 2;
-      for (let i = 0; i <= 256; i += 32) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, 256);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(256, i);
-        ctx.stroke();
-      }
-
-      const canvasTexture = new THREE.CanvasTexture(canvas);
-      canvasTexture.wrapS = THREE.RepeatWrapping;
-      canvasTexture.wrapT = THREE.RepeatWrapping;
-      canvasTexture.repeat.set(4, 4);
-      material.map = canvasTexture;
+    // Limit history to 50 states
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
     }
+
+    setHistory(newHistory);
+  };
+
+  // Undo function
+  const undo = () => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setItems(prevState.items);
+      setRoomWidth(prevState.roomWidth);
+      setRoomHeight(prevState.roomHeight);
+      setCurrentFloorTexture(prevState.currentFloorTexture);
+      setCurrentWallTexture(prevState.currentWallTexture);
+      setHistoryIndex(historyIndex - 1);
+    }
+  };
+
+  // Redo function
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setItems(nextState.items);
+      setRoomWidth(nextState.roomWidth);
+      setRoomHeight(nextState.roomHeight);
+      setCurrentFloorTexture(nextState.currentFloorTexture);
+      setCurrentWallTexture(nextState.currentWallTexture);
+      setHistoryIndex(historyIndex + 1);
+    }
+  };
+
+  const createTexturedMaterial = (textureConfig) => {
+    // Check if we should use file or color
+    const hasValidFile = textureConfig.file &&
+      textureConfig.file.trim() !== "" &&
+      textureConfig.file !== null &&
+      textureConfig.file !== undefined;
+
+    // Create material with appropriate base
+    const material = new THREE.MeshStandardMaterial({
+      color: hasValidFile ? 0xffffff : textureConfig.color, // Use white for textures, actual color for solid colors
+      roughness: 0.8,
+      metalness: 0.0
+    });
+
+    // If no valid file, return material with just color
+    if (!hasValidFile) {
+      return material;
+    }
+
+    // Check if texture is already loaded
+    const cacheKey = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
+    if (loadedTexturesRef.current.has(cacheKey)) {
+      const texture = loadedTexturesRef.current.get(cacheKey);
+      material.map = texture;
+      return material;
+    }
+
+    // Load texture from file
+    textureLoader.current.load(
+      textureConfig.file,
+      (texture) => {
+        // Configure texture for better color representation
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.encoding = THREE.sRGBEncoding;
+        texture.flipY = false;
+
+        // Use custom scale if provided, otherwise use defaults
+        const scaleX = textureConfig.scale ? textureConfig.scale[0] : 4;
+        const scaleY = textureConfig.scale ? textureConfig.scale[1] : 4;
+        texture.repeat.set(scaleX, scaleY);
+
+        // Store loaded texture with scale info
+        loadedTexturesRef.current.set(cacheKey, texture);
+
+        // Apply texture to material
+        material.map = texture;
+        material.needsUpdate = true;
+      },
+      (progress) => {
+        console.log(`Loading texture: ${(progress.loaded / progress.total * 100)}%`);
+      },
+      (error) => {
+        console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
+        // Fallback to color-based material
+        material.color.setHex(textureConfig.color);
+        material.needsUpdate = true;
+      }
+    );
 
     return material;
   };
@@ -191,7 +518,8 @@ export default function App() {
   const createWalls = (scene) => {
     const wallHeight = 3;
     const wallThickness = 0.1;
-    const roomSize = 5;
+    const roomSizeX = roomWidth / 2;
+    const roomSizeZ = roomHeight / 2;
 
     // Clear existing walls
     wallRefs.current.forEach(wall => {
@@ -202,23 +530,23 @@ export default function App() {
     const wallTexture = WALL_TEXTURES[currentWallTexture];
     const wallMaterial = createTexturedMaterial(wallTexture);
 
-    // Create 4 walls
+    // Create 4 walls with dynamic sizing
     const walls = [
       { // North wall
-        geometry: new THREE.BoxGeometry(roomSize * 2, wallHeight, wallThickness),
-        position: [0, wallHeight / 2, -roomSize]
+        geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
+        position: [0, wallHeight / 2, -roomSizeZ]
       },
       { // South wall
-        geometry: new THREE.BoxGeometry(roomSize * 2, wallHeight, wallThickness),
-        position: [0, wallHeight / 2, roomSize]
+        geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
+        position: [0, wallHeight / 2, roomSizeZ]
       },
       { // East wall
-        geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomSize * 2),
-        position: [roomSize, wallHeight / 2, 0]
+        geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomHeight),
+        position: [roomSizeX, wallHeight / 2, 0]
       },
       { // West wall
-        geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomSize * 2),
-        position: [-roomSize, wallHeight / 2, 0]
+        geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomHeight),
+        position: [-roomSizeX, wallHeight / 2, 0]
       }
     ];
 
@@ -231,6 +559,7 @@ export default function App() {
       wallRefs.current.push(wall);
     });
   };
+
   // Create simple bathroom fixtures
   const createToilet = (position) => {
     const group = new THREE.Group();
@@ -393,7 +722,7 @@ export default function App() {
     return group;
   };
 
-  const createModel = (type, position, rotation = 0) => {
+  const createModel = (type, position, rotation = 0, scale = 1.0) => {
     let group;
     switch(type) {
       case "Toilet": group = createToilet(position); break;
@@ -407,10 +736,32 @@ export default function App() {
 
     if (group) {
       group.rotation.y = rotation;
+      group.scale.set(scale, scale, scale);
       group.userData.type = type;
     }
 
     return group;
+  };
+
+  // Room size change handler
+  const handleRoomSizeChange = (newWidth, newHeight) => {
+    setRoomWidth(newWidth);
+    setRoomHeight(newHeight);
+
+    // Constrain existing objects to new room bounds
+    const maxX = (newWidth / 2) - 0.4;
+    const maxZ = (newHeight / 2) - 0.4;
+
+    setItems(prev => prev.map(item => ({
+      ...item,
+      position: [
+        Math.max(-maxX, Math.min(maxX, item.position[0])),
+        item.position[1],
+        Math.max(-maxZ, Math.min(maxZ, item.position[2]))
+      ]
+    })));
+
+    saveToHistory(items);
   };
 
   const addItem = (type) => {
@@ -419,8 +770,12 @@ export default function App() {
       type,
       position: [Math.random() * 4 - 2, type === 'Mirror' ? 1.2 : 0, Math.random() * 4 - 2],
       rotation: 0,
+      scale: 1.0
     };
-    setItems((prev) => [...prev, newItem]);
+
+    const newItems = [...items, newItem];
+    setItems(newItems);
+    saveToHistory(newItems);
   };
 
   useEffect(() => {
@@ -436,23 +791,34 @@ export default function App() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
     rendererRef.current = renderer;
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    // Lighting - Enhanced for better color representation
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(5, 10, 5);
     directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
     scene.add(directionalLight);
 
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
     directionalLight2.position.set(-5, 10, -5);
     scene.add(directionalLight2);
 
-    // Floor
-    const floorGeometry = new THREE.BoxGeometry(10, 0.1, 10);
+    const frontLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    frontLight.position.set(0, 5, 10);
+    scene.add(frontLight);
+
+    // Floor - now dynamic based on room size
+    const floorGeometry = new THREE.BoxGeometry(roomWidth, 0.1, roomHeight);
     const floorTexture = FLOOR_TEXTURES[currentFloorTexture];
     const floorMaterial = createTexturedMaterial(floorTexture);
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -465,10 +831,23 @@ export default function App() {
     // Create walls
     createWalls(scene);
 
-    // Grid
-    const gridHelper = new THREE.GridHelper(10, 10);
+    // Grid - now dynamic based on room size
+    const gridHelper = new THREE.GridHelper(Math.max(roomWidth, roomHeight), Math.max(roomWidth, roomHeight));
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
+
+    // Touch support variables
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStart = null;
+    let lastTouchDistance = 0;
+    let isTouchDevice = 'ontouchstart' in window;
+
+    // Mouse interaction variables
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseDownX = 0;
+    let mouseDownY = 0;
 
     // Raycaster for object selection
     const raycaster = new THREE.Raycaster();
@@ -478,28 +857,31 @@ export default function App() {
     let isRotating = false;
     let isObjectRotating = false;
     let isHeightAdjusting = false;
+    let isScaling = false;
     let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    let verticalPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     let dragOffset = new THREE.Vector3();
     let rotationStartAngle = 0;
     let objectStartRotation = 0;
     let heightStartY = 0;
+    let scaleStart = 1;
     let mouseStartY = 0;
-
-    // Snapping settings
-    const SNAP_DISTANCE = 0.3;
-    const WALL_POSITIONS = [-5, 5]; // X and Z coordinates of walls
-
-    // Mouse interaction variables
-    let mouseX = 0;
-    let mouseY = 0;
-    let mouseDownX = 0;
-    let mouseDownY = 0;
 
     const updateMousePosition = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    };
+
+    const updateTouchPosition = (touch) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+    };
+
+    const getTouchDistance = (touch1, touch2) => {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
     };
 
     const getIntersectedObject = (mouse) => {
@@ -521,26 +903,24 @@ export default function App() {
 
     const snapToWall = (position) => {
       const snappedPos = { ...position };
+      const roomSizeX = roomWidth / 2;
+      const roomSizeZ = roomHeight / 2;
+      const SNAP_DISTANCE = 0.3;
 
       // Snap to walls with proper offset so objects stay inside the room
-      WALL_POSITIONS.forEach(wallPos => {
-        // Check Z-axis walls (North/South walls)
-        if (Math.abs(position.z - wallPos) < SNAP_DISTANCE) {
-          if (wallPos > 0) { // South wall
-            snappedPos.z = wallPos - 0.4; // Keep objects inside room
-          } else { // North wall
-            snappedPos.z = wallPos + 0.4; // Keep objects inside room
-          }
-        }
-        // Check X-axis walls (East/West walls)
-        if (Math.abs(position.x - wallPos) < SNAP_DISTANCE) {
-          if (wallPos > 0) { // East wall
-            snappedPos.x = wallPos - 0.4; // Keep objects inside room
-          } else { // West wall
-            snappedPos.x = wallPos + 0.4; // Keep objects inside room
-          }
-        }
-      });
+      // Check Z-axis walls (North/South walls)
+      if (Math.abs(position.z - roomSizeZ) < SNAP_DISTANCE) {
+        snappedPos.z = roomSizeZ - 0.4; // South wall
+      } else if (Math.abs(position.z - (-roomSizeZ)) < SNAP_DISTANCE) {
+        snappedPos.z = -roomSizeZ + 0.4; // North wall
+      }
+
+      // Check X-axis walls (East/West walls)
+      if (Math.abs(position.x - roomSizeX) < SNAP_DISTANCE) {
+        snappedPos.x = roomSizeX - 0.4; // East wall
+      } else if (Math.abs(position.x - (-roomSizeX)) < SNAP_DISTANCE) {
+        snappedPos.x = -roomSizeX + 0.4; // West wall
+      }
 
       return snappedPos;
     };
@@ -589,6 +969,12 @@ export default function App() {
           mouseStartY = event.clientY;
 
           renderer.domElement.style.cursor = 'row-resize';
+        } else if (event.altKey) { // Alt + click for scaling
+          isScaling = true;
+          scaleStart = selectedObject.scale.x; // Assume uniform scaling
+          mouseStartY = event.clientY;
+
+          renderer.domElement.style.cursor = 'nw-resize';
         } else { // Left click for dragging
           isDragging = true;
 
@@ -613,7 +999,22 @@ export default function App() {
     const handleMouseMove = (event) => {
       updateMousePosition(event);
 
-      if (isHeightAdjusting && selectedObject) {
+      if (isScaling && selectedObject) {
+        // Scale object
+        const deltaY = (mouseStartY - event.clientY) * 0.01;
+        let newScale = Math.max(0.2, Math.min(3.0, scaleStart + deltaY));
+
+        selectedObject.scale.set(newScale, newScale, newScale);
+
+        // Update items state
+        const itemId = selectedObject.userData.itemId;
+        setItems(prev => prev.map(item =>
+          item.id === itemId
+            ? { ...item, scale: newScale }
+            : item
+        ));
+
+      } else if (isHeightAdjusting && selectedObject) {
         // Adjust object height
         const deltaY = (mouseStartY - event.clientY) * 0.01; // Inverted for intuitive movement
         let newY = heightStartY + deltaY;
@@ -659,9 +1060,11 @@ export default function App() {
 
         let newPosition = intersectPoint.add(dragOffset);
 
-        // Constrain to room bounds (within walls)
-        newPosition.x = Math.max(-4.8, Math.min(4.8, newPosition.x));
-        newPosition.z = Math.max(-4.8, Math.min(4.8, newPosition.z));
+        // Constrain to room bounds (within walls) - now dynamic
+        const maxX = (roomWidth / 2) - 0.4;
+        const maxZ = (roomHeight / 2) - 0.4;
+        newPosition.x = Math.max(-maxX, Math.min(maxX, newPosition.x));
+        newPosition.z = Math.max(-maxZ, Math.min(maxZ, newPosition.z));
 
         // Apply wall snapping
         const snappedPos = snapToWall(newPosition);
@@ -715,6 +1118,7 @@ export default function App() {
       isRotating = false;
       isObjectRotating = false;
       isHeightAdjusting = false;
+      isScaling = false;
       renderer.domElement.style.cursor = 'default';
     };
 
@@ -727,6 +1131,121 @@ export default function App() {
       camera.position.multiplyScalar(scale);
     };
 
+    const handleTouchStart = (event) => {
+      event.preventDefault();
+      const touches = event.touches;
+
+      if (touches.length === 1) {
+        const touch = touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStart = touch;
+
+        updateTouchPosition(touch);
+        const intersected = getIntersectedObject(mouse);
+
+        if (intersected) {
+          selectedObject = intersected.object;
+          isDragging = true;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersectPoint = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+          dragOffset.subVectors(selectedObject.position, intersectPoint);
+
+          highlightObject(selectedObject, true);
+        } else {
+          isRotating = true;
+          mouseX = touch.clientX;
+          mouseY = touch.clientY;
+        }
+      } else if (touches.length === 2) {
+        lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+      }
+    };
+
+    const handleTouchMove = (event) => {
+      event.preventDefault();
+      const touches = event.touches;
+
+      if (touches.length === 1) {
+        const touch = touches[0];
+        updateTouchPosition(touch);
+
+        if (isDragging && selectedObject) {
+          raycaster.setFromCamera(mouse, camera);
+          const intersectPoint = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+
+          let newPosition = intersectPoint.add(dragOffset);
+
+          const maxX = (roomWidth / 2) - 0.4;
+          const maxZ = (roomHeight / 2) - 0.4;
+          newPosition.x = Math.max(-maxX, Math.min(maxX, newPosition.x));
+          newPosition.z = Math.max(-maxZ, Math.min(maxZ, newPosition.z));
+
+          const snappedPos = snapToWall(newPosition);
+          newPosition.x = snappedPos.x;
+          newPosition.z = snappedPos.z;
+
+          selectedObject.position.copy(newPosition);
+
+          const itemId = selectedObject.userData.itemId;
+          setItems(prev => prev.map(item =>
+            item.id === itemId
+              ? { ...item, position: [newPosition.x, newPosition.y, newPosition.z] }
+              : item
+          ));
+        } else if (isRotating) {
+          const deltaX = touch.clientX - mouseX;
+          const deltaY = touch.clientY - mouseY;
+
+          const spherical = new THREE.Spherical();
+          spherical.setFromVector3(camera.position);
+          spherical.theta -= deltaX * 0.01;
+          spherical.phi += deltaY * 0.01;
+          spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+
+          camera.position.setFromSpherical(spherical);
+          camera.lookAt(0, 0, 0);
+
+          mouseX = touch.clientX;
+          mouseY = touch.clientY;
+        }
+      } else if (touches.length === 2) {
+        const distance = getTouchDistance(touches[0], touches[1]);
+        const scale = distance / lastTouchDistance;
+
+        if (scale > 1.02) {
+          camera.position.multiplyScalar(0.95);
+          lastTouchDistance = distance;
+        } else if (scale < 0.98) {
+          camera.position.multiplyScalar(1.05);
+          lastTouchDistance = distance;
+        }
+      }
+    };
+
+    const handleTouchEnd = (event) => {
+      event.preventDefault();
+      const touches = event.touches;
+
+      if (selectedObject) {
+        highlightObject(selectedObject, false);
+        selectedObject = null;
+      }
+
+      isDragging = false;
+      isRotating = false;
+      isObjectRotating = false;
+      isHeightAdjusting = false;
+      isScaling = false;
+
+      if (touches.length === 0) {
+        touchStart = null;
+      }
+    };
+
     mountRef.current.appendChild(renderer.domElement);
 
     // Add event listeners
@@ -735,6 +1254,13 @@ export default function App() {
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
     renderer.domElement.addEventListener('contextmenu', handleContextMenu);
     renderer.domElement.addEventListener('wheel', handleWheel);
+
+    // Add touch event listeners
+    if (isTouchDevice) {
+      renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+      renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+      renderer.domElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
 
     // Animation loop
     const animate = () => {
@@ -758,6 +1284,13 @@ export default function App() {
       renderer.domElement.removeEventListener('mouseup', handleMouseUp);
       renderer.domElement.removeEventListener('contextmenu', handleContextMenu);
       renderer.domElement.removeEventListener('wheel', handleWheel);
+
+      if (isTouchDevice) {
+        renderer.domElement.removeEventListener('touchstart', handleTouchStart);
+        renderer.domElement.removeEventListener('touchmove', handleTouchMove);
+        renderer.domElement.removeEventListener('touchend', handleTouchEnd);
+      }
+
       window.removeEventListener('resize', handleResize);
 
       if (mountRef.current && renderer.domElement) {
@@ -766,6 +1299,37 @@ export default function App() {
       renderer.dispose();
     };
   }, []);
+
+  // Update floor and walls when room size changes
+  useEffect(() => {
+    if (!sceneRef.current) return;
+
+    // Update floor
+    if (floorRef.current) {
+      sceneRef.current.remove(floorRef.current);
+      const floorGeometry = new THREE.BoxGeometry(roomWidth, 0.1, roomHeight);
+      const floorTexture = FLOOR_TEXTURES[currentFloorTexture];
+      const floorMaterial = createTexturedMaterial(floorTexture);
+      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.position.y = -0.05;
+      floor.receiveShadow = true;
+      floor.userData.isFloor = true;
+      sceneRef.current.add(floor);
+      floorRef.current = floor;
+    }
+
+    // Update walls
+    createWalls(sceneRef.current);
+
+    // Update grid
+    const existingGrid = sceneRef.current.children.find(child => child.isGridHelper);
+    if (existingGrid) {
+      sceneRef.current.remove(existingGrid);
+      const gridHelper = new THREE.GridHelper(Math.max(roomWidth, roomHeight), Math.max(roomWidth, roomHeight));
+      gridHelper.position.y = 0.01;
+      sceneRef.current.add(gridHelper);
+    }
+  }, [roomWidth, roomHeight]);
 
   // Update floor and wall textures
   useEffect(() => {
@@ -802,7 +1366,7 @@ export default function App() {
 
     // Add new items
     items.forEach(item => {
-      const model = createModel(item.type, item.position, item.rotation || 0);
+      const model = createModel(item.type, item.position, item.rotation || 0, item.scale || 1.0);
       if (model) {
         model.userData.isBathroomItem = true;
         model.userData.itemId = item.id;
@@ -812,13 +1376,24 @@ export default function App() {
   }, [items]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div style={{ width: '98vw', height: '99vh', position: 'relative' }}>
       <Toolbar onAdd={addItem} />
       <TexturePanel
         onFloorChange={(texture) => setCurrentFloorTexture(FLOOR_TEXTURES.indexOf(texture))}
         onWallChange={(texture) => setCurrentWallTexture(WALL_TEXTURES.indexOf(texture))}
         currentFloor={currentFloorTexture}
         currentWall={currentWallTexture}
+      />
+      <RoomSizePanel
+        onRoomSizeChange={handleRoomSizeChange}
+        roomWidth={roomWidth}
+        roomHeight={roomHeight}
+      />
+      <UndoRedoPanel
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
       />
       <div
         ref={mountRef}
@@ -836,12 +1411,23 @@ export default function App() {
         background: 'rgba(0,0,0,0.5)',
         padding: '5px 10px',
         borderRadius: '4px',
-        fontSize: '12px',
-        maxWidth: '300px'
+        fontSize: window.innerWidth <= 768 ? '10px' : '12px',
+        maxWidth: window.innerWidth <= 768 ? '280px' : '320px',
+        lineHeight: '1.2'
       }}>
-        <div>Left click + drag: Move objects | Right click + drag: Rotate objects</div>
-        <div>Ctrl + drag: Adjust height | Left click empty space: Rotate camera | Wheel: Zoom</div>
-        <div style={{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }}>Objects snap to walls automatically</div>
+        {window.innerWidth <= 768 ? (
+          <div>
+            <div>Touch + drag: Move objects</div>
+            <div>Two finger pinch: Zoom</div>
+            <div>Objects snap to walls automatically</div>
+          </div>
+        ) : (
+          <div>
+            <div>Left click + drag: Move | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
+            <div>Left click empty space: Rotate camera | Wheel: Zoom | Undo/Redo: Top right buttons</div>
+            <div style={{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }}>Objects snap to walls automatically • Adjust room size on right panel</div>
+          </div>
+        )}
       </div>
     </div>
   );
