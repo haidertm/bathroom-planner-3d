@@ -32,19 +32,27 @@ export default function App () {
   const roomWidthRef = useRef(ROOM_DEFAULTS.WIDTH);
   const roomHeightRef = useRef(ROOM_DEFAULTS.HEIGHT);
 
+  // ID counter to ensure unique IDs
+  const nextIdRef = useRef(2000);
+
+  // Generate unique ID function
+  const generateUniqueId = () => {
+    return nextIdRef.current++;
+  };
+
   // Default objects to load on page start
   const getDefaultItems = () => {
     return [
       {
         id: 1001,
-        type: "Shower",
+        type: 'Shower',
         position: [-1.2, 0, -2.2], // Corner position
         rotation: 0,
         scale: 1.0
       },
       {
         id: 1003,
-        type: "Sink",
+        type: 'Sink',
         position: [0, 0, -2.65], // Center against back wall
         rotation: 0,
         scale: 1.0
@@ -92,12 +100,14 @@ export default function App () {
   const addItem = (type) => {
     const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 };
     const newItem = {
-      id: Date.now(),
+      id: generateUniqueId(), // Use the unique ID generator
       type,
       position: [Math.random() * 4 - 2, defaults.height, Math.random() * 4 - 2],
       rotation: 0,
       scale: defaults.scale
     };
+
+    console.log('newItem >>>', newItem);
 
     const newItems = [...items, newItem];
     setItems(newItems);
@@ -111,14 +121,34 @@ export default function App () {
   };
 
   const deleteItem = (itemId) => {
-    const newItems = items.filter(item => item.id !== itemId);
-    setItems(newItems);
-    saveToHistory({
-      items: newItems,
-      roomWidth,
-      roomHeight,
-      currentFloorTexture,
-      currentWallTexture
+    // Validate itemId
+    if (itemId === undefined || itemId === null) {
+      return;
+    }
+
+    // Use functional state update to avoid stale closure issues
+    setItems(prevItems => {
+      // Check if item exists before filtering
+      const itemExists = prevItems.some(item => item.id === itemId);
+      if (!itemExists) {
+        return prevItems; // Return unchanged if item doesn't exist
+      }
+
+      // Filter out the item with the matching ID
+      const newItems = prevItems.filter(item => item.id !== itemId);
+
+      // Save to history after state update
+      setTimeout(() => {
+        saveToHistory({
+          items: newItems,
+          roomWidth,
+          roomHeight,
+          currentFloorTexture,
+          currentWallTexture
+        });
+      }, 0);
+
+      return newItems;
     });
   };
 
@@ -282,7 +312,8 @@ export default function App () {
         ) : (
           <div>
             <div>Left click + drag: Move | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
-            <div>Left click empty space: Rotate camera | Wheel: Zoom | Undo/Redo: Top right buttons</div>
+            <div>Left click empty space: Rotate camera | Wheel: Zoom | DELETE key: Delete selected object</div>
+            <div>Undo/Redo: Top right buttons</div>
             <div style={ { fontSize: '10px', marginTop: '2px', opacity: '0.8' } }>Smart wall hiding enabled • Walls
               auto-hide for clear view • Toggle in room settings
             </div>

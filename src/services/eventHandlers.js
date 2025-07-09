@@ -39,6 +39,7 @@ export class EventHandlers {
     this.touchStartY = 0;
     this.touchStart = null;
     this.lastTouchDistance = 0;
+    this.lastTouchTime = 0;
     this.isTouchDevice = 'ontouchstart' in window;
 
     // Bind methods
@@ -51,6 +52,7 @@ export class EventHandlers {
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleResize = this.handleResize.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
   getIntersectedObject (mouse) {
@@ -73,9 +75,9 @@ export class EventHandlers {
       position: `(${ i.object.position.x.toFixed(1) }, ${ i.object.position.z.toFixed(1) })`
     }));
 
-    if (hitObjects.length > 0) {
-      console.log('Visible intersects (closest first):', hitObjects);
-    }
+    // if (hitObjects.length > 0) {
+    //   console.log('Visible intersects (closest first):', hitObjects);
+    // }
 
     // Process intersections in order of distance (closest first)
     for (let intersect of visibleIntersects) {
@@ -83,7 +85,7 @@ export class EventHandlers {
 
       // If it's a wall, block further object selection
       if (obj.userData.isWall) {
-        console.log(`Hit wall at distance ${ intersect.distance.toFixed(2) } - BLOCKING all objects behind it`);
+        // console.log(`Hit wall at distance ${ intersect.distance.toFixed(2) } - BLOCKING all objects behind it`);
         return null; // Camera rotation
       }
 
@@ -94,20 +96,32 @@ export class EventHandlers {
       }
 
       if (bathroomObj.userData.isBathroomItem) {
-        console.log(`SUCCESS: Hit bathroom object "${ bathroomObj.userData.type }" at distance ${ intersect.distance.toFixed(2) }`);
+        // console.log(`SUCCESS: Hit bathroom object "${ bathroomObj.userData.type }" at distance ${ intersect.distance.toFixed(2) }`);
         return { object: bathroomObj, point: intersect.point };
       }
     }
 
-    console.log('No valid object hit - triggering camera rotation');
+    // console.log('No valid object hit - triggering camera rotation');
     return null;
   }
 
-  handleKeyDown (event) {
-    if (event.key === 'Delete' && this.selectedObject) {
+  // Added keyboard event handler for delete functionality
+  handleKeyDown(event) {
+    // Delete selected object when Delete or Backspace key is pressed
+    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedObject) {
+      event.preventDefault();
       const itemId = this.selectedObject.userData.itemId;
-      this.deleteItem(itemId); // Call the prop passed from App.jsx
+
+      // Clear selection and highlight
+      highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+
+      console.log('itemToBeDeleted>>>', itemId);
+
+      // Delete the item
+      if (this.deleteItem && itemId) {
+        this.deleteItem(itemId);
+      }
     }
   }
 
@@ -120,8 +134,16 @@ export class EventHandlers {
     this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     const intersected = this.getIntersectedObject(this.mouse);
 
+    // Clear previous selection if clicking on empty space or different object
+    if (this.selectedObject && (!intersected || intersected.object !== this.selectedObject)) {
+      highlightObject(this.selectedObject, false);
+      this.selectedObject = null;
+    }
+
     if (intersected) {
       this.selectedObject = intersected.object;
+
+      console.log('selectedObject >>>', this.selectedObject);
 
       if (event.button === 2) { // Right click for rotation
         this.isObjectRotating = true;
@@ -261,12 +283,8 @@ export class EventHandlers {
     }
   }
 
-  handleMouseUp (event) {
-    if (this.selectedObject) {
-      highlightObject(this.selectedObject, false);
-      this.selectedObject = null;
-    }
-
+  handleMouseUp(event) {
+    // Don't clear selection on mouse up - keep it selected for potential deletion
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -296,6 +314,31 @@ export class EventHandlers {
 
       this.mouse = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
       const intersected = this.getIntersectedObject(this.mouse);
+
+      // Handle double tap to delete on mobile
+      if (intersected && this.selectedObject && intersected.object === this.selectedObject) {
+        const now = Date.now();
+        if (this.lastTouchTime && now - this.lastTouchTime < 300) {
+          // Double tap detected - delete the object
+          const itemId = this.selectedObject.userData.itemId;
+          highlightObject(this.selectedObject, false);
+          this.selectedObject = null;
+
+          if (this.deleteItem && itemId) {
+            this.deleteItem(itemId);
+          }
+          return;
+        }
+        this.lastTouchTime = now;
+      } else {
+        this.lastTouchTime = Date.now();
+      }
+
+      // Clear previous selection if touching empty space or different object
+      if (this.selectedObject && (!intersected || intersected.object !== this.selectedObject)) {
+        highlightObject(this.selectedObject, false);
+        this.selectedObject = null;
+      }
 
       if (intersected) {
         this.selectedObject = intersected.object;
@@ -383,11 +426,7 @@ export class EventHandlers {
     event.preventDefault();
     const touches = event.touches;
 
-    if (this.selectedObject) {
-      highlightObject(this.selectedObject, false);
-      this.selectedObject = null;
-    }
-
+    // Don't clear selection on touch end - keep it selected for potential deletion
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -412,13 +451,15 @@ export class EventHandlers {
     this.renderer.domElement.addEventListener('contextmenu', this.handleContextMenu);
     this.renderer.domElement.addEventListener('wheel', this.handleWheel);
 
+    // Add keyboard event listener for delete functionality
+    document.addEventListener('keydown', this.handleKeyDown);
+
     if (this.isTouchDevice) {
       this.renderer.domElement.addEventListener('touchstart', this.handleTouchStart, { passive: false });
       this.renderer.domElement.addEventListener('touchmove', this.handleTouchMove, { passive: false });
       this.renderer.domElement.addEventListener('touchend', this.handleTouchEnd, { passive: false });
     }
 
-    window.addEventListener('keydown', this.handleKeyDown.bind(this));
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -429,12 +470,15 @@ export class EventHandlers {
     this.renderer.domElement.removeEventListener('contextmenu', this.handleContextMenu);
     this.renderer.domElement.removeEventListener('wheel', this.handleWheel);
 
+    // Remove keyboard event listener
+    document.removeEventListener('keydown', this.handleKeyDown);
+
     if (this.isTouchDevice) {
       this.renderer.domElement.removeEventListener('touchstart', this.handleTouchStart);
       this.renderer.domElement.removeEventListener('touchmove', this.handleTouchMove);
       this.renderer.domElement.removeEventListener('touchend', this.handleTouchEnd);
     }
-    window.removeEventListener('keydown', this.handleKeyDown);
+
     window.removeEventListener('resize', this.handleResize);
   }
 }

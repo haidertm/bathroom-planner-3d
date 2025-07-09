@@ -125,18 +125,18 @@ export class SimpleWallCulling {
     // Hide the identified walls completely
     wallsToHide.forEach(({ wall, direction }) => {
       wall.visible = false;
-      console.log(`Hiding ${direction} wall - visible: ${wall.visible}`);
+      // console.log(`Hiding ${direction} wall - visible: ${wall.visible}`);
     });
 
-    // Debug: Log current wall states
-    console.log('Current wall visibility:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
-      `${direction}: ${wall.visible}`
-    ));
+    // // Debug: Log current wall states
+    // console.log('Current wall visibility:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
+    //   `${direction}: ${wall.visible}`
+    // ));
 
     // Debug output for camera position
-    if (wallsToHide.length > 0) {
-      console.log(`Camera at (${cameraPos.x.toFixed(1)}, ${cameraPos.z.toFixed(1)}) - Hiding: ${wallsToHide.map(w => w.direction).join(', ')}`);
-    }
+    // if (wallsToHide.length > 0) {
+    //   console.log(`Camera at (${cameraPos.x.toFixed(1)}, ${cameraPos.z.toFixed(1)}) - Hiding: ${wallsToHide.map(w => w.direction).join(', ')}`);
+    // }
   }
 
   dispose() {
