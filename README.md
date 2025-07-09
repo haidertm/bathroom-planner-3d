@@ -346,6 +346,6 @@ If you have any questions or need help with the bathroom planner:
 
 ---
 
-**Happy Bathroom Planning!** 🛁✨✨✨
+**Happy Bathroom Planning!** 🛁✨✨✨✨✨✨
 
 Create your perfect bathroom layout with realistic 3D visualization, professional-grade planning tools, and modern responsive design for any device.
