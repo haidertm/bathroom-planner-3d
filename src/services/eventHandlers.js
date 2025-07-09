@@ -1,16 +1,17 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.js';
 import { constrainToRoom, snapToWall } from '../utils/constraints.js';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions.js';
 
 export class EventHandlers {
-  constructor(scene, camera, renderer, roomWidthRef, roomHeightRef, setItems) {
+  constructor (scene, camera, renderer, roomWidthRef, roomHeightRef, setItems, deleteItem) {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
     this.roomWidthRef = roomWidthRef;
     this.roomHeightRef = roomHeightRef;
     this.setItems = setItems;
+    this.deleteItem = deleteItem;
 
     // Interaction state
     this.raycaster = new THREE.Raycaster();
@@ -52,7 +53,7 @@ export class EventHandlers {
     this.handleResize = this.handleResize.bind(this);
   }
 
-  getIntersectedObject(mouse) {
+  getIntersectedObject (mouse) {
     this.raycaster.setFromCamera(mouse, this.camera);
 
     // Raycast against all objects, but filter results by visibility
@@ -69,7 +70,7 @@ export class EventHandlers {
         i.object.userData.isBathroomItem ? 'bathroom' :
           i.object.userData.isFloor ? 'floor' : 'other',
       distance: i.distance.toFixed(2),
-      position: `(${i.object.position.x.toFixed(1)}, ${i.object.position.z.toFixed(1)})`
+      position: `(${ i.object.position.x.toFixed(1) }, ${ i.object.position.z.toFixed(1) })`
     }));
 
     if (hitObjects.length > 0) {
@@ -82,7 +83,7 @@ export class EventHandlers {
 
       // If it's a wall, block further object selection
       if (obj.userData.isWall) {
-        console.log(`Hit wall at distance ${intersect.distance.toFixed(2)} - BLOCKING all objects behind it`);
+        console.log(`Hit wall at distance ${ intersect.distance.toFixed(2) } - BLOCKING all objects behind it`);
         return null; // Camera rotation
       }
 
@@ -93,7 +94,7 @@ export class EventHandlers {
       }
 
       if (bathroomObj.userData.isBathroomItem) {
-        console.log(`SUCCESS: Hit bathroom object "${bathroomObj.userData.type}" at distance ${intersect.distance.toFixed(2)}`);
+        console.log(`SUCCESS: Hit bathroom object "${ bathroomObj.userData.type }" at distance ${ intersect.distance.toFixed(2) }`);
         return { object: bathroomObj, point: intersect.point };
       }
     }
@@ -102,7 +103,15 @@ export class EventHandlers {
     return null;
   }
 
-  handleMouseDown(event) {
+  handleKeyDown (event) {
+    if (event.key === 'Delete' && this.selectedObject) {
+      const itemId = this.selectedObject.userData.itemId;
+      this.deleteItem(itemId); // Call the prop passed from App.jsx
+      this.selectedObject = null;
+    }
+  }
+
+  handleMouseDown (event) {
     this.mouseDownX = event.clientX;
     this.mouseDownY = event.clientY;
     this.mouseX = event.clientX;
@@ -150,7 +159,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseMove(event) {
+  handleMouseMove (event) {
     this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
 
     if (this.isScaling && this.selectedObject) {
@@ -252,7 +261,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseUp(event) {
+  handleMouseUp (event) {
     if (this.selectedObject) {
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
@@ -266,16 +275,16 @@ export class EventHandlers {
     this.renderer.domElement.style.cursor = 'default';
   }
 
-  handleContextMenu(event) {
+  handleContextMenu (event) {
     event.preventDefault();
   }
 
-  handleWheel(event) {
+  handleWheel (event) {
     const scale = event.deltaY > 0 ? 1.1 : 0.9;
     this.camera.position.multiplyScalar(scale);
   }
 
-  handleTouchStart(event) {
+  handleTouchStart (event) {
     event.preventDefault();
     const touches = event.touches;
 
@@ -308,7 +317,7 @@ export class EventHandlers {
     }
   }
 
-  handleTouchMove(event) {
+  handleTouchMove (event) {
     event.preventDefault();
     const touches = event.touches;
 
@@ -370,7 +379,7 @@ export class EventHandlers {
     }
   }
 
-  handleTouchEnd(event) {
+  handleTouchEnd (event) {
     event.preventDefault();
     const touches = event.touches;
 
@@ -390,13 +399,13 @@ export class EventHandlers {
     }
   }
 
-  handleResize() {
+  handleResize () {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  addEventListeners() {
+  addEventListeners () {
     this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
@@ -409,10 +418,11 @@ export class EventHandlers {
       this.renderer.domElement.addEventListener('touchend', this.handleTouchEnd, { passive: false });
     }
 
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
     window.addEventListener('resize', this.handleResize);
   }
 
-  removeEventListeners() {
+  removeEventListeners () {
     this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
@@ -424,7 +434,7 @@ export class EventHandlers {
       this.renderer.domElement.removeEventListener('touchmove', this.handleTouchMove);
       this.renderer.domElement.removeEventListener('touchend', this.handleTouchEnd);
     }
-
+    window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('resize', this.handleResize);
   }
 }

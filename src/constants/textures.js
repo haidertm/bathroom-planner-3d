@@ -21,3 +21,6 @@ export const WALL_TEXTURES = [
   { name: "Brick", file: "/textures/wall_brick.jpg", color: 0xcc6666, scale: [6, 4] },
   { name: "Subway Tile", file: "", color: 0xf0f0f0, scale: [8, 6] }
 ];
+
+export const DEFAULT_FLOOR_TEXTURE = 5; // Wood
+export const DEFAULT_WALL_TEXTURE = 7; // Brick
