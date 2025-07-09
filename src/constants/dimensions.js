@@ -1,6 +1,6 @@
 export const ROOM_DEFAULTS = {
-  WIDTH: 10,
-  HEIGHT: 10,
+  WIDTH: 6,
+  HEIGHT: 6,
   MIN_SIZE: 6,
   MAX_SIZE: 20,
   STEP: 0.5

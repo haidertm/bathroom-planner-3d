@@ -21,7 +21,8 @@ export class SceneManager {
 
     // Create camera
     this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(0, 5, 10);
+    this.camera.position.set(7, 2, 7);
+    this.camera.lookAt(0, 0, 0); // Make camera look at center of scene
 
     // Create renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
