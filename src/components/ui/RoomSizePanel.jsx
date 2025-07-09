@@ -2,7 +2,16 @@ import React, { useState } from 'react';
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js';
 import { isMobile } from '../../utils/helpers.js';
 
-export const RoomSizePanel = ({ onRoomSizeChange, roomWidth, roomHeight, showGrid, onToggleGrid, onConstrainObjects }) => {
+export const RoomSizePanel = ({
+  onRoomSizeChange,
+  roomWidth,
+  roomHeight,
+  showGrid,
+  onToggleGrid,
+  onConstrainObjects,
+  wallCullingEnabled = true,
+  onToggleWallCulling
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [tempWidth, setTempWidth] = useState(roomWidth);
   const [tempHeight, setTempHeight] = useState(roomHeight);
@@ -131,7 +140,7 @@ export const RoomSizePanel = ({ onRoomSizeChange, roomWidth, roomHeight, showGri
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <input
               type="checkbox"
               id="showGrid"
@@ -141,6 +150,19 @@ export const RoomSizePanel = ({ onRoomSizeChange, roomWidth, roomHeight, showGri
             />
             <label htmlFor="showGrid" style={{ fontSize: '12px', cursor: 'pointer' }}>
               Show Grid
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              id="wallCulling"
+              checked={wallCullingEnabled}
+              onChange={(e) => onToggleWallCulling && onToggleWallCulling(e.target.checked)}
+              style={{ margin: 0 }}
+            />
+            <label htmlFor="wallCulling" style={{ fontSize: '12px', cursor: 'pointer' }}>
+              Smart Wall Hiding
             </label>
           </div>
         </div>

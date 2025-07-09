@@ -54,18 +54,51 @@ export class EventHandlers {
 
   getIntersectedObject(mouse) {
     this.raycaster.setFromCamera(mouse, this.camera);
+
+    // Raycast against all objects, but filter results by visibility
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
-    for (let intersect of intersects) {
-      let obj = intersect.object;
-      // Find the parent group (bathroom item)
-      while (obj.parent && !obj.userData.isBathroomItem) {
-        obj = obj.parent;
+    // Filter out invisible objects and sort by distance (closest first)
+    const visibleIntersects = intersects
+      .filter(intersect => intersect.object.visible)
+      .sort((a, b) => a.distance - b.distance);
+
+    // Debug: log what visible objects we're hitting in order
+    const hitObjects = visibleIntersects.map(i => ({
+      type: i.object.userData.isWall ? 'wall' :
+        i.object.userData.isBathroomItem ? 'bathroom' :
+          i.object.userData.isFloor ? 'floor' : 'other',
+      distance: i.distance.toFixed(2),
+      position: `(${i.object.position.x.toFixed(1)}, ${i.object.position.z.toFixed(1)})`
+    }));
+
+    if (hitObjects.length > 0) {
+      console.log('Visible intersects (closest first):', hitObjects);
+    }
+
+    // Process intersections in order of distance (closest first)
+    for (let intersect of visibleIntersects) {
+      const obj = intersect.object;
+
+      // If it's a wall, block further object selection
+      if (obj.userData.isWall) {
+        console.log(`Hit wall at distance ${intersect.distance.toFixed(2)} - BLOCKING all objects behind it`);
+        return null; // Camera rotation
       }
-      if (obj.userData.isBathroomItem) {
-        return { object: obj, point: intersect.point };
+
+      // If it's a bathroom object, check if it's the parent or find the parent
+      let bathroomObj = obj;
+      while (bathroomObj.parent && !bathroomObj.userData.isBathroomItem) {
+        bathroomObj = bathroomObj.parent;
+      }
+
+      if (bathroomObj.userData.isBathroomItem) {
+        console.log(`SUCCESS: Hit bathroom object "${bathroomObj.userData.type}" at distance ${intersect.distance.toFixed(2)}`);
+        return { object: bathroomObj, point: intersect.point };
       }
     }
+
+    console.log('No valid object hit - triggering camera rotation');
     return null;
   }
 

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { createFloor, createWalls, createCustomGrid } from '../models/roomGeometry.js';
 import textureManager from './textureManager.js';
+import { SimpleWallCulling } from './simpleWallCulling.js';
 
 export class SceneManager {
   constructor() {
@@ -10,6 +11,7 @@ export class SceneManager {
     this.floorRef = null;
     this.wallRefs = [];
     this.gridRef = null;
+    this.wallCullingManager = new SimpleWallCulling();
   }
 
   initializeScene() {
@@ -83,6 +85,10 @@ export class SceneManager {
     const wallMaterial = textureManager.createTexturedMaterial(wallTexture);
     this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
     this.wallRefs.forEach(wall => this.scene.add(wall));
+
+    // Update wall culling manager with new walls and room size
+    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
+    this.wallCullingManager.initialize(this.wallRefs, this.camera);
   }
 
   updateGrid(roomWidth, roomHeight, showGrid) {
@@ -123,12 +129,28 @@ export class SceneManager {
   startAnimationLoop() {
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // Update wall culling based on camera position
+      this.wallCullingManager.updateWallVisibility();
+
       this.renderer.render(this.scene, this.camera);
     };
     animate();
   }
 
+  // Wall culling controls
+  setWallCullingEnabled(enabled) {
+    this.wallCullingManager.setEnabled(enabled);
+  }
+
+  isWallCullingEnabled() {
+    return this.wallCullingManager.enabled;
+  }
+
   dispose() {
+    if (this.wallCullingManager) {
+      this.wallCullingManager.dispose();
+    }
     if (this.renderer) {
       this.renderer.dispose();
     }

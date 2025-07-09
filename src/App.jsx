@@ -39,6 +39,7 @@ export default function App() {
   const [roomWidth, setRoomWidth] = useState(ROOM_DEFAULTS.WIDTH);
   const [roomHeight, setRoomHeight] = useState(ROOM_DEFAULTS.HEIGHT);
   const [showGrid, setShowGrid] = useState(true);
+  const [wallCullingEnabled, setWallCullingEnabled] = useState(true);
 
   // Hooks
   const { saveToHistory, undo, redo, canUndo, canRedo } = useUndoRedo();
@@ -111,6 +112,13 @@ export default function App() {
     }
   };
 
+  const handleWallCullingToggle = (enabled) => {
+    setWallCullingEnabled(enabled);
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.setWallCullingEnabled(enabled);
+    }
+  };
+
   // Initialize scene
   useEffect(() => {
     // Initialize scene manager
@@ -131,6 +139,9 @@ export default function App() {
     sceneManagerRef.current.updateFloor(roomWidth, roomHeight, FLOOR_TEXTURES[currentFloorTexture]);
     sceneManagerRef.current.updateWalls(roomWidth, roomHeight, WALL_TEXTURES[currentWallTexture]);
     sceneManagerRef.current.updateGrid(roomWidth, roomHeight, showGrid);
+
+    // Set initial wall culling state
+    sceneManagerRef.current.setWallCullingEnabled(wallCullingEnabled);
 
     // Add canvas to DOM
     mountRef.current.appendChild(renderer.domElement);
@@ -200,6 +211,8 @@ export default function App() {
           const constrainedItems = constrainAllObjectsToRoom(items, roomWidth, roomHeight);
           setItems(constrainedItems);
         }}
+        wallCullingEnabled={wallCullingEnabled}
+        onToggleWallCulling={handleWallCullingToggle}
       />
       <UndoRedoPanel
         onUndo={handleUndo}
@@ -231,13 +244,13 @@ export default function App() {
           <div>
             <div>Touch + drag: Move objects</div>
             <div>Two finger pinch: Zoom</div>
-            <div>Objects snap to walls automatically</div>
+            <div>Walls auto-hide for clear interior view</div>
           </div>
         ) : (
           <div>
             <div>Left click + drag: Move | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
             <div>Left click empty space: Rotate camera | Wheel: Zoom | Undo/Redo: Top right buttons</div>
-            <div style={{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }}>Objects snap to walls automatically • Adjust room size on right panel</div>
+            <div style={{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }}>Smart wall hiding enabled • Walls auto-hide for clear view • Toggle in room settings</div>
           </div>
         )}
       </div>
