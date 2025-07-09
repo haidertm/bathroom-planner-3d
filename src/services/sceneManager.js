@@ -107,24 +107,41 @@ export class SceneManager {
   }
 
   updateBathroomItems(items, createModel) {
+
+    console.log('=== UPDATING BATHROOM ITEMS ===');
+    console.log('Items to render:', items.length);
+
     // Remove existing bathroom items
     const objectsToRemove = [];
+
     this.scene.traverse((child) => {
       if (child.userData.isBathroomItem) {
         objectsToRemove.push(child);
       }
     });
-    objectsToRemove.forEach(obj => this.scene.remove(obj));
+    console.log('Objects to remove from scene:', objectsToRemove.length);
+
+    objectsToRemove.forEach((obj, index) => {
+      console.log(`  Removing [${index}] ID: ${obj.userData.itemId}, Type: ${obj.userData.type}`);
+      this.scene.remove(obj);
+    });
 
     // Add new items
-    items.forEach(item => {
+    items.forEach((item, index) => {
+      console.log(`Creating model for item [${index}]:`, item);
+
       const model = createModel(item.type, item.position, item.rotation || 0, item.scale || 1.0);
       if (model) {
         model.userData.isBathroomItem = true;
         model.userData.itemId = item.id;
+
+        console.log(`  Created model with userData:`, model.userData);
+
         this.scene.add(model);
       }
     });
+
+    console.log('=== BATHROOM ITEMS UPDATE COMPLETE ===');
   }
 
   startAnimationLoop() {
