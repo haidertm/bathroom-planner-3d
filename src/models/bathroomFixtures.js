@@ -1,4 +1,11 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+// Create a shared GLTF loader instance
+const gltfLoader = new GLTFLoader();
+
+// Cache for loaded models
+const modelCache = new Map();
 
 export const createToilet = (position) => {
   const group = new THREE.Group();
@@ -161,6 +168,79 @@ export const createMirror = (position) => {
   return group;
 };
 
+export const createDoor = (position) => {
+  const group = new THREE.Group();
+
+  // Check if door model is already cached
+  if (modelCache.has('door')) {
+    const cachedModel = modelCache.get('door');
+    const doorClone = cachedModel.clone();
+    doorClone.position.set(position[0], position[1], position[2]);
+    group.add(doorClone);
+    return group;
+  }
+
+  // Create a placeholder while loading
+  const placeholderGeometry = new THREE.BoxGeometry(0.1, 2.0, 0.8);
+  const placeholderMaterial = new THREE.MeshStandardMaterial({
+    color: 0x8B4513,
+    transparent: true,
+    opacity: 0.7
+  });
+  const placeholder = new THREE.Mesh(placeholderGeometry, placeholderMaterial);
+  placeholder.position.set(0, 1, 0);
+  group.add(placeholder);
+
+  // Load the door model
+  gltfLoader.load(
+    '/models/door.glb',
+    (gltf) => {
+      // Remove placeholder
+      group.remove(placeholder);
+
+      // Add the loaded model
+      const doorModel = gltf.scene;
+
+      // Ensure all meshes cast and receive shadows
+      doorModel.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      // Cache the model for future use
+      modelCache.set('door', doorModel);
+
+      // Add to group
+      group.add(doorModel);
+
+      console.log('Door model loaded successfully');
+    },
+    (progress) => {
+      console.log('Door loading progress:', (progress.loaded / progress.total * 100) + '%');
+    },
+    (error) => {
+      console.error('Error loading door model:', error);
+
+      // Create fallback door if loading fails
+      const fallbackGeometry = new THREE.BoxGeometry(0.1, 2.0, 0.8);
+      const fallbackMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+      const fallbackDoor = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
+      fallbackDoor.position.set(0, 1, 0);
+
+      // Remove placeholder and add fallback
+      group.remove(placeholder);
+      group.add(fallbackDoor);
+
+      console.log('Using fallback door geometry');
+    }
+  );
+
+  group.position.set(position[0], position[1], position[2]);
+  return group;
+};
+
 export const createModel = (type, position, rotation = 0, scale = 1.0) => {
   let group;
 
@@ -171,6 +251,7 @@ export const createModel = (type, position, rotation = 0, scale = 1.0) => {
     case "Shower": group = createShower(position); break;
     case "Radiator": group = createRadiator(position); break;
     case "Mirror": group = createMirror(position); break;
+    case "Door": group = createDoor(position); break;
     default: return null;
   }
 
